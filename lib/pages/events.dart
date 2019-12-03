@@ -11,36 +11,46 @@ class EventsPage extends StatefulWidget {
   _EventsPageState createState() => new _EventsPageState();
 }
 
-class _EventsPageState extends State<EventsPage> {
+class _EventsPageState extends State<EventsPage> with SingleTickerProviderStateMixin{
+  TabController _tabController;
+  int _navIndex = 0;
   List<Event> soonEvents = [];
 
   @override
   initState() {
     super.initState();
     soonEvents = [new Event()];
+    _tabController = TabController(initialIndex: 0, length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+      });
+    });
   }
-
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        drawer: DrawerWidget(),
-        appBar: new AppBar(
-            title: Text('Events'),
-            bottom: TabBar(tabs: [
-              Tab(
-                text: 'Soon',
-              ),
-              Tab(
-                text: 'This month',
-              ),
-              Tab(
-                text: 'Later',
-              )
-            ])),
-        body: TabBarView(children: [
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _tabController.index,
+          onTap: changeTab,
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.timer),
+              title: Text('Soon'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              title: Text('This month'),
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.watch_later),
+              title: Text('Later'),
+            )
+          ],
+        ),
+        body: TabBarView(controller: _tabController, children: [
           Center(
               child: RefreshIndicator(
             child: ListView.builder(
@@ -64,8 +74,15 @@ class _EventsPageState extends State<EventsPage> {
     );
   }
 
+
+  void changeTab(int index) {
+    setState(() {
+      _tabController.animateTo(index);
+    });
+  }
+
   int getEventLength() {
-    if(soonEvents != null) {
+    if (soonEvents != null) {
       return soonEvents.length;
     } else {
       return 0;
@@ -76,7 +93,30 @@ class _EventsPageState extends State<EventsPage> {
     Event event = soonEvents[index];
     return ListTile(
       title: Text(event.title),
-      subtitle: Text(event.description+'\nLocation: '+event.location+'\nStart: '+event.start.toString()+' End: '+event.end.toString()),
+      subtitle: RichText(
+        text: TextSpan(
+            children: [
+              TextSpan(
+                text: event.description + '\n',
+              ),
+              WidgetSpan(
+                child: Icon(Icons.map),
+              ),
+              TextSpan(text: event.location + '\n'),
+              WidgetSpan(
+                child: Icon(Icons.timer),
+              ),
+              TextSpan(
+                text: 'Start: ' +
+                    event.start.toString() +
+                    ' End: ' +
+                    event.end.toString(),
+              ),
+            ],
+            style: TextStyle(
+              color: Colors.black,
+            )),
+      ),
     );
   }
 
@@ -103,8 +143,8 @@ class _EventsPageState extends State<EventsPage> {
 
 class Event {
   String imageUrl;
-  String title = 'None';
-  String description = 'None';
+  String title;
+  String description;
   String summary;
   String location;
 
@@ -115,16 +155,20 @@ class Event {
   bool educational;
   bool food;
 
-  Event({this.title, this.description, this.location, this.start, this.end});
+  Event(
+      {this.title = 'No events loaded',
+      this.description = '',
+      this.location = '',
+      this.start,
+      this.end});
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      title: json['title'],
-      description: json['description'],
-      location: json['location'],
-      start: DateTime.fromMicrosecondsSinceEpoch(json['start']),
-      end: DateTime.fromMicrosecondsSinceEpoch(json['end'])
-    );
+        title: json['title'],
+        description: json['description'],
+        location: json['location'],
+        start: DateTime.fromMicrosecondsSinceEpoch(json['start']),
+        end: DateTime.fromMicrosecondsSinceEpoch(json['end']));
   }
 
   Widget get image {
@@ -134,5 +178,4 @@ class Event {
   set setTitle(title) {
     this.title = title;
   }
-
 }
