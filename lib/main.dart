@@ -92,20 +92,20 @@ class _MyAppState extends State<MyApp> {
                     currentAccountPicture: CircleAvatar(backgroundImage: getUserPhoto(),),
                   ),
                   Visibility(
-                      visible: _showAccountMenu && _protoApi.currentAccount != null && _protoApi.currentAccount.isValid(),
+                      visible: _showAccountMenu && _protoApi.currentOauthAccount != null && _protoApi.currentOauthAccount.isValid(),
                       child: ListTile(
                         title: Text('Dashboard'),
                       )
                   ),
                   Visibility(
-                    visible: _showAccountMenu && _protoApi.currentAccount != null && _protoApi.currentAccount.isValid(),
+                    visible: _showAccountMenu && _protoApi.currentOauthAccount != null && _protoApi.currentOauthAccount.isValid(),
                     child: ListTile(
                       title: Text('Logout'),
                       onTap: logout,
                     ),
                   ),
                   Visibility(
-                    visible: _showAccountMenu && (_protoApi.currentAccount == null || !_protoApi.currentAccount.isValid()),
+                    visible: _showAccountMenu && (_protoApi.currentOauthAccount == null || !_protoApi.currentOauthAccount.isValid()),
                     child: ListTile(
                       title: Text('Login'),
                       onTap: login,
@@ -181,7 +181,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> initializeAccount() async {
+  void initializeAccount() async {
     simpleAuth.OAuthAccount account = await _protoApi.loadAccountFromCache();
 
     if (account != null && account.isValid()) {
@@ -189,14 +189,14 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> login() async {
+  void login() async {
     await _protoApi.authenticate();
     setState(() {
       requestInfo();
     });
   }
 
-  Future<void> logout() async {
+  void logout() {
     setState(() {
       _protoApi.logOut();
       userInfo = null;
