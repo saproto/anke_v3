@@ -1,3 +1,6 @@
+#Personal config files
+*flutter_export_environment.sh
+
 #Sensitive information
 /lib/config/oauth.dart
 
