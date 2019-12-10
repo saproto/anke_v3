@@ -19,10 +19,6 @@ class HomePage extends StatefulWidget {
 
   final api;
 
-  final icon = Icons.home;
-  final name = 'Home';
-
-
   @override
   _HomePageState createState() => new _HomePageState();
 }

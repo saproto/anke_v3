@@ -21,33 +21,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  static final simpleAuth.OAuthApi _protoApi = new simpleAuth.OAuthApi(
-      'saproto-api',
-      oauthCredentials['id'],
-      oauthCredentials['secret'],
-      'https://www.proto.utwente.nl/oauth/token',
-      'https://www.proto.utwente.nl/oauth/authorize',
-      'nl.saproto.anke://redirect',
-      scopes: ['*'],
-  );
+  static simpleAuth.OAuthApi _protoApi;
+  bool loggedIn = false;
 
   UserInfo userInfo;
 
   PageController _pageController;
   int _page = 0;
 
-  List menuItems = [
-    {
-      'icon': Icons.home,
-      'name': 'Home',
-      'page': HomePage(api: _protoApi,),
-    },
-    {
-      'icon': Icons.calendar_today,
-      'name': 'Events',
-      'page': EventsPage()
-    }
-  ];
+  List menuItems;
 
   List<Widget> _pages;
 
@@ -63,7 +45,30 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _pageController = PageController(initialPage: 0);
     SimpleAuthFlutter.init(context);
+    _protoApi = new simpleAuth.OAuthApi(
+      'saproto-api',
+      oauthCredentials['id'],
+      oauthCredentials['secret'],
+      'https://www.proto.utwente.nl/oauth/token',
+      'https://www.proto.utwente.nl/oauth/authorize',
+      'nl.saproto.anke://redirect',
+      scopes: ['*'],
+    );
+    menuItems = [
+      {
+        'icon': Icons.home,
+        'name': 'Home',
+        'page': HomePage(api: _protoApi,),
+      },
+      {
+        'icon': Icons.calendar_today,
+        'name': 'Events',
+        'page': EventsPage()
+      }
+    ];
     _pages = menuItems.map<Widget>((menuItem) => menuItem['page']).toList();
+
+    initializeAccount();
   }
 
   @override
@@ -87,15 +92,23 @@ class _MyAppState extends State<MyApp> {
                     currentAccountPicture: CircleAvatar(backgroundImage: getUserPhoto(),),
                   ),
                   Visibility(
-                      visible: _showAccountMenu,
+                      visible: _showAccountMenu && _protoApi.currentAccount != null && _protoApi.currentAccount.isValid(),
                       child: ListTile(
                         title: Text('Dashboard'),
                       )
                   ),
                   Visibility(
-                    visible: _showAccountMenu,
+                    visible: _showAccountMenu && _protoApi.currentAccount != null && _protoApi.currentAccount.isValid(),
                     child: ListTile(
                       title: Text('Logout'),
+                      onTap: logout,
+                    ),
+                  ),
+                  Visibility(
+                    visible: _showAccountMenu && (_protoApi.currentAccount == null || !_protoApi.currentAccount.isValid()),
+                    child: ListTile(
+                      title: Text('Login'),
+                      onTap: login,
                     ),
                   ),
                   Visibility(
@@ -156,7 +169,44 @@ class _MyAppState extends State<MyApp> {
   ImageProvider getUserPhoto() {
     return userInfo != null ? NetworkImage(userInfo.photoThumb) : AssetImage('images/lake.jpg');
   }
+
+  Future<void> requestInfo() async {
+    var request = new simpleAuth.Request(simpleAuth.HttpMethod.Get, oauthCredentials['baseurl']+'user/info');
+    simpleAuth.Response<String> userInfoResult = await _protoApi.send<String>(request);
+    setState(() {
+      userInfo = UserInfo.fromJson(jsonDecode(userInfoResult.body));
+    });
+    setState(() {
+      developer.log(userInfoResult.body);
+    });
+  }
+
+  Future<void> initializeAccount() async {
+    simpleAuth.OAuthAccount account = await _protoApi.loadAccountFromCache();
+
+    if (account != null && account.isValid()) {
+      requestInfo();
+    }
+  }
+
+  Future<void> login() async {
+    await _protoApi.authenticate();
+    setState(() {
+      requestInfo();
+    });
+  }
+
+  Future<void> logout() async {
+    setState(() {
+      _protoApi.logOut();
+      userInfo = null;
+    });
+  }
+
+
 }
+
+
 
 class UserInfo {
   String name;
